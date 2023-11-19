@@ -1,0 +1,103 @@
+openapi: 3.0.3
+info:
+  title: Product Service
+  description: Task 3 (First API with AWS API Gateway and AWS Lambda).
+  termsOfService: http://swagger.io/terms/
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+  - url: https://yptpm2h4uh.execute-api.eu-west-1.amazonaws.com/
+paths:
+  /products:
+    get:
+      summary: Returns a list of products
+      description: The response from the lambda is a full array of products.
+      operationId: getProductsList
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnexpectedError"
+  /products/{productId}:
+    get:
+      summary: Returns a product by ID
+      description: The response from the lambda should be 1 searched product from an array of products.
+      operationId: getProductsById
+      parameters:
+        - name: productId
+          in: path
+          description: The response from the lambda is a full array of products
+          required: true
+          schema:
+            type: string
+            #format: uuid
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: A product with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundError"
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnexpectedError"
+
+components:
+  schemas:
+    Product:
+      required:
+        - title
+        - price
+      type: object
+      properties:
+        description:
+          type: string
+          example: Short Product Description1
+        id:
+          type: string
+          example: 7567ec4b-b10c-48c5-9345-fc73c48a80aa
+        price:
+          type: integer
+          example: 24
+        title:
+          type: string
+          example: ProductOne
+    NotFoundError:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        body:
+          type: string
+          example: Product not found
+    UnexpectedError:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 500
+        body:
+          type: string
+          example: Unexpected error
