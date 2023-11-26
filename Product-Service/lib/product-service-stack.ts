@@ -41,12 +41,28 @@ export class ProductServiceStack extends Stack {
       handler: "handler",
     })
 
+    const createProduct = new NodejsFunction(this, 'createProduct', {
+      runtime: Runtime.NODEJS_18_X,
+      functionName: 'createProduct',
+      entry: 'lambda/createProduct.ts',
+      handler: "handler",
+    })
+
     httpApi.addRoutes({
       path: '/products',
       methods: [HttpMethod.GET],
       integration: new HttpLambdaIntegration(
         'get-products-integration',
         getProductsList,
+      ),
+    });
+
+    httpApi.addRoutes({
+      path: '/products',
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration(
+        'post-products-integration',
+        createProduct,
       ),
     });
 
@@ -67,12 +83,20 @@ export class ProductServiceStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     })
 
+    products_table.grantReadData(getProductsList);
+    products_table.grantReadData(getProductsById);
+    products_table.grantReadWriteData(createProduct)
+
     const stocks_table = new Table(this, 'STOCKS', {
       tableName: 'STOCKS',
       partitionKey: { name: 'product_id', type: AttributeType.STRING },
       billingMode: BillingMode.PROVISIONED,
       removalPolicy: RemovalPolicy.DESTROY,
     })
+
+    stocks_table.grantReadData(getProductsList);
+    stocks_table.grantReadData(getProductsById);
+    stocks_table.grantReadWriteData(createProduct)
 
     // task-4: Loading Table Data
     new AwsCustomResource(this, 'AwsCustomResourceProducts', {

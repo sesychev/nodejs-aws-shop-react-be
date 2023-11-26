@@ -1,8 +1,12 @@
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { header } from '../headers/headers';
-import { products } from '../mocks/data';
+//import { Product, Stock, StockProduct } from '../types/types';
+//import { products } from '../mocks/data';
 
 export const handler = async () => {
 	try {
+		const products = await ProductsList()
 		return {
 			statusCode: 200,
 			headers: header,
@@ -17,3 +21,36 @@ export const handler = async () => {
 		};
 	}
 };
+
+async function ProductsList() {
+	const client = new DynamoDBClient({});
+	const docClient = DynamoDBDocumentClient.from(client);
+
+	const productsDB = await docClient.send(
+		new ScanCommand({
+			TableName: 'PRODUCTS',
+		}));
+
+	console.log(productsDB.Items)
+
+	const stocksDB = await docClient.send(
+		new ScanCommand({
+			TableName: 'STOCKS',
+		}));
+
+	console.log(stocksDB.Items)
+
+	const result = productsDB.Items?.map((data) => {
+		return {
+			id: data.id,
+			count: stocksDB.Items?.find((stock) => stock.id === data.id)?.count,
+			title: data.title,
+			description: data.description,
+			price: data.price,
+		};
+	});
+
+	console.log(result);
+
+	return result;
+}
