@@ -2,14 +2,15 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { header } from "../headers/headers";
 import { DatabaseConnectionError, ValidationError } from "../errors/errors";
 import { v4 as uuidv4 } from 'uuid';
-import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 
 export const handler = async (event: any) => {
   try {
     const client = new DynamoDBClient({});
+    const docClient = DynamoDBDocumentClient.from(client);
 
     const body = JSON.parse(event.body);
-
+/*
     const check =
       body &&
       body.hasOwnProperty('title') &&
@@ -20,22 +21,22 @@ export const handler = async (event: any) => {
     if (!check) {
       throw new ValidationError('Product data is invalid');
     }
-
+*/
     const id = uuidv4()
 
     const product = {
       id: id,
-      title: body.title ?? '',
-      description: body.description ?? '',
-      price: body.price ?? 0,
+      title: body.title,
+      description: body.description,
+      price: body.price,
     }
 
     const stock = {
       product_id: id,
-      count: body.count ?? 0
+      count: body.count,
     }
 
-    await client.send(
+    await docClient.send(
       new TransactWriteCommand({
         TransactItems: [
           {

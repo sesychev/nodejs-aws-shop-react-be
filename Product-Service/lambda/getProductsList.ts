@@ -40,17 +40,17 @@ async function ProductsList() {
 
 	console.log(stocksDB.Items)
 
-	const result = productsDB.Items?.map((data) => {
+	const products = productsDB.Items?.map((data) => {
 		return {
 			id: data.id,
-			count: stocksDB.Items?.find((stock) => stock.id === data.id)?.count,
+			count: stocksDB.Items?.find((stock) => stock.product_id === data.id)?.count,
 			title: data.title,
 			description: data.description,
 			price: data.price,
 		};
 	});
 
-	console.log(result);
+	console.log(products);
 
-	return result;
+	return products;
 }
