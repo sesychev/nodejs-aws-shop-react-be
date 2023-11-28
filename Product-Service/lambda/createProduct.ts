@@ -1,16 +1,13 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { header } from "../headers/headers";
-import { DatabaseConnectionError, ValidationError } from "../errors/errors";
+import { DatabaseConnectionError } from "../errors/errors";
 import { v4 as uuidv4 } from 'uuid';
-import { DynamoDBDocumentClient, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 export const handler = async (event: any) => {
   try {
-    const client = new DynamoDBClient({});
-    const docClient = DynamoDBDocumentClient.from(client);
+    const client = new DocumentClient();
 
     const body = JSON.parse(event.body);
-/*
     const check =
       body &&
       body.hasOwnProperty('title') &&
@@ -19,9 +16,14 @@ export const handler = async (event: any) => {
       body.hasOwnProperty('count');
 
     if (!check) {
-      throw new ValidationError('Product data is invalid');
-    }
-*/
+      return {
+        statusCode: 400,
+        headers: header,
+        body: JSON.stringify('Product data is invalid', null, 2),
+        'isBase64Encoded': false
+      };
+    };
+
     const id = uuidv4()
 
     const product = {
@@ -36,8 +38,8 @@ export const handler = async (event: any) => {
       count: body.count,
     }
 
-    await docClient.send(
-      new TransactWriteCommand({
+    await client.transactWrite(
+      {
         TransactItems: [
           {
             Put: {
@@ -52,14 +54,14 @@ export const handler = async (event: any) => {
             },
           },
         ],
-      }),
-    );
+      },
+    ).promise();
 
     return {
       statusCode: 200,
       headers: header,
-      body: JSON.stringify("Product is created", null, 2),
-      "isBase64Encoded": false
+      body: JSON.stringify('Product is created', null, 2),
+      'isBase64Encoded': false
     };
   } catch (error: any) {
     throw new DatabaseConnectionError(error);
