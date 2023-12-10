@@ -1,4 +1,4 @@
-import { CfnOutput, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { CfnOutput, CfnParameter, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import {
   CorsHttpMethod,
@@ -12,6 +12,10 @@ import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
 import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
 import { products, stocks } from '../mocks/data';
 import { Product, Stock } from '../types/types';
+import { Queue } from 'aws-cdk-lib/aws-sqs';
+import { Subscription, SubscriptionFilter, SubscriptionProtocol, Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export class ProductServiceStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -139,6 +143,70 @@ export class ProductServiceStack extends Stack {
       description: 'Creating two databases tables in DynamoDB',
       exportName: 'Stocks',
     });
+
+    // task-6:
+    const queue = new Queue(this, 'catalogItemsQueue', {
+      queueName: 'Queue',
+    });
+
+    const topic = new Topic(this, 'createProductTopic', {
+      displayName: 'SNS topic',
+      topicName: 'Topic',
+    });
+
+    const moreEmail = new CfnParameter(this, "subscriptionMore");//
+
+    topic.addSubscription(
+      new EmailSubscription(moreEmail.value.toString(), {
+        filterPolicy: {
+          count: SubscriptionFilter.numericFilter({
+            greaterThanOrEqualTo: 10,
+          }),
+        }
+      })
+    );
+
+    const lessEmail = new CfnParameter(this, "subscriptionLess");//
+
+    topic.addSubscription(
+      new EmailSubscription(lessEmail.value.toString(), {
+        filterPolicy: {
+          count: SubscriptionFilter.numericFilter({
+            lessThan: 10,
+          }),
+        }
+      })
+    );
+
+    const catalogBatchProcess = new NodejsFunction(this, 'catalogBatchProcess',
+      {
+        runtime: Runtime.NODEJS_18_X,
+        functionName: 'catalogBatchProcess',
+        entry: 'lambda/catalogBatchProcess.ts',
+        handler: 'handler',
+      }
+    );
+
+    products_table.grantWriteData(catalogBatchProcess);
+    stocks_table.grantWriteData(catalogBatchProcess);
+    topic.grantPublish(catalogBatchProcess);
+
+    catalogBatchProcess.addEventSource(
+      new SqsEventSource(queue, {
+        batchSize: 5,
+      })
+    );
+
+    new CfnOutput(this, 'TopicArn', {
+      value: topic.topicArn,
+      description: 'The arn of the SNS topic',
+    });
+
+    new CfnOutput(this, 'QueueArn', {
+      value: queue.queueArn,
+      description: 'The arn of the SQS topic',
+    });
+    //the end
   }
 
   private product = (item: Product) => {
@@ -175,26 +243,3 @@ export class ProductServiceStack extends Stack {
     return records;
   }
 }
-/*
-//Add one item to the table.
-private product = (index: number) => {
-return {
-  id: { S: `${products[index].id}` },
-  title: { S: `${products[index].title}` },
-  description: { S: `${products[index].description}` },
-  price: { N: `${products[index].price}` }
-};
-}
-new AwsCustomResource(this, 'AwsCustomResource_test', {
-onCreate: {
-  service: 'DynamoDB',
-  action: 'putItem',
-  parameters: {
-    TableName: products_table.tableName,
-    Item: this.product(0),
-  },
-  physicalResourceId: PhysicalResourceId.of(Date.now().toString()),
-},
-policy: AwsCustomResourcePolicy.fromSdkCalls({ resources: [products_table.tableArn] }),
-});
-*/

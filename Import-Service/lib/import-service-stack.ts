@@ -5,6 +5,7 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { BlockPublicAccess, Bucket, EventType, HttpMethods } from 'aws-cdk-lib/aws-s3';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
+import { Queue } from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
@@ -83,5 +84,14 @@ export class ImportServiceStack extends Stack {
       description: '',
     });
 
+
+    const queue = Queue.fromQueueArn(
+      this,
+      'catalogItemsQueue',
+      'arn:aws:sqs:eu-west-1:675448858320:Queue',
+    );
+
+    queue.grantSendMessages(importFileParser);
+    // the end
   };
 };
