@@ -76,7 +76,7 @@ export const handler = async (event: { Records: { body: any; }[]; }) => {
           MessageAttributes: {
             count: {
               DataType: 'Number',
-              StringValue: `${body.count}`,
+              StringValue: body.count,
             },
           },
         };
