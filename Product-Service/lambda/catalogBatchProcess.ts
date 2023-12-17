@@ -48,7 +48,7 @@ export const handler = async (event: { Records: { body: any; }[]; }) => {
       }
 
       console.log('new-product:', JSON.stringify({ ...product, ...stock }));
-
+      
       await clientDB.transactWrite(
         {
           TransactItems: [
@@ -81,9 +81,7 @@ export const handler = async (event: { Records: { body: any; }[]; }) => {
           },
         };
 
-        const command = new PublishCommand(params);
-
-        client.send(command, (error) => {
+        client.send(new PublishCommand(params), (error) => {
           if (error) console.log('SNS publish failed:', error.stack);
         });
 

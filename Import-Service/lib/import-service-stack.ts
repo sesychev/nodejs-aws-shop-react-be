@@ -1,12 +1,15 @@
 import { CorsHttpMethod, HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2-alpha';
 import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
-import { CfnOutput, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { CfnOutput, RemovalPolicy, Stack, StackProps, aws_apigateway } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { BlockPublicAccess, Bucket, EventType, HttpMethods } from 'aws-cdk-lib/aws-s3';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { Queue } from 'aws-cdk-lib/aws-sqs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
+import { HttpLambdaAuthorizer, HttpLambdaResponseType } from '@aws-cdk/aws-apigatewayv2-authorizers-alpha';
+import { LambdaIntegration, ResponseType, RestApi, TokenAuthorizer } from 'aws-cdk-lib/aws-apigateway';
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export const BUCKET = 'uploaded-rschool-bucket';
@@ -18,7 +21,7 @@ export class ImportServiceStack extends Stack {
     const bucket = new Bucket(this, 'UploadBucket',
       {
         bucketName: BUCKET,
-        // 👇 Setting up CORS
+        // Setting up CORS
         cors: [
           {
             allowedMethods: [
@@ -84,7 +87,6 @@ export class ImportServiceStack extends Stack {
       description: '',
     });
 
-
     const queue = Queue.fromQueueArn(
       this,
       'catalogItemsQueue',
@@ -92,6 +94,13 @@ export class ImportServiceStack extends Stack {
     );
 
     queue.grantSendMessages(importFileParser);
-    // the end
+
+    //task-7
+    const importedLambda = lambda.Function.fromFunctionArn(this, 'basicAuthorizer', 'arn:aws:lambda:eu-west-1:675448858320:function:basicAuthorizer');
+
+    console.log('functionArn', importedLambda.functionArn);
+    console.log('functionName', importedLambda.functionName);
+
+    
   };
 };

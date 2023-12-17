@@ -31,7 +31,7 @@ export const handler = async (event: { Records: any; }) => {
 
     await new Promise(() => {
       const body = item.Body;
-            const batch: any[] = [];
+      const batch: any[] = [];
 
       if (body instanceof Readable) {
         body
@@ -39,6 +39,9 @@ export const handler = async (event: { Records: any; }) => {
           .on('data', async (data: any) => {
             console.log(`Record: ${JSON.stringify(data)}.`);
             batch.push(data);
+          })
+          .on('end', async () => {
+            console.log('CSV file is parsed.');
 
             try {
               const params = {
@@ -49,34 +52,24 @@ export const handler = async (event: { Records: any; }) => {
                 }))
               };
 
-              const command = new SendMessageBatchCommand(params);
+              await clientSQS.send(new SendMessageBatchCommand(params));
 
-              clientSQS.send(command);
+              console.log('SQS batch messages have been sent.');
 
-              console.log('SQS message has been sent.');
-
-            } catch (error) {
-              console.log(error);
-            }
-          })
-          .on('end', async () => {
-            console.log('CSV file is parsed.');
-
-            try {
               await client.send(new CopyObjectCommand({
                 Bucket: BUCKET,
                 CopySource: BUCKET + '/' + KEY,
                 Key: KEY.replace('uploaded', 'parsed'),
               }))
 
-              console.log(`CopyObjectCommand.`);
+              console.log(`CopyObjectCommand is done.`);
 
               await client.send(new DeleteObjectCommand({
                 Bucket: BUCKET,
                 Key: KEY,
               }))
 
-              console.log(`DeleteObjectCommand.`);
+              console.log(`DeleteObjectCommand is done.`);
             } catch (error) {
               console.log(error);
             }
