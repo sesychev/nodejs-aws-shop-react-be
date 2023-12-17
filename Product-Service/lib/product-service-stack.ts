@@ -203,8 +203,8 @@ export class ProductServiceStack extends Stack {
     });
 
     new CfnOutput(this, 'QueueArn', {
-      value: queue.queueArn,
-      description: 'The arn of the SQS topic',
+      value: queue.queueUrl,
+      description: 'The URL of the SQS topic',
     });
     //the end
   }

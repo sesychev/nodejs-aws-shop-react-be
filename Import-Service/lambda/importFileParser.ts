@@ -4,7 +4,7 @@ import { header } from '../headers/headers';
 import { Readable } from 'stream';
 import csv = require('csv-parser');
 import { REGION } from './importProductsFile';
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageBatchCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { fromEnv } from '@aws-sdk/credential-provider-env';
 
 export const handler = async (event: { Records: any; }) => {
@@ -31,31 +31,34 @@ export const handler = async (event: { Records: any; }) => {
 
     await new Promise(() => {
       const body = item.Body;
+            const batch: any[] = [];
 
       if (body instanceof Readable) {
         body
           .pipe(csv())
           .on('data', async (data: any) => {
             console.log(`Record: ${JSON.stringify(data)}.`);
+            batch.push(data);
 
             try {
               const params = {
                 QueueUrl: 'https://sqs.eu-west-1.amazonaws.com/675448858320/Queue',
-                MessageBody: JSON.stringify(data),
+                Entries: batch.map((message, index) => ({
+                  Id: String(index),
+                  MessageBody: JSON.stringify(message)
+                }))
               };
 
-              const command = new SendMessageCommand(params);
+              const command = new SendMessageBatchCommand(params);
 
-              clientSQS.send(command,
-                () => { console.log('SQS data:', data); });
+              clientSQS.send(command);
 
-              console.log('SQS message has sent.');
+              console.log('SQS message has been sent.');
 
             } catch (error) {
               console.log(error);
             }
           })
-
           .on('end', async () => {
             console.log('CSV file is parsed.');
 
