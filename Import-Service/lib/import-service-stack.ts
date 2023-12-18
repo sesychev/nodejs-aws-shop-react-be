@@ -1,6 +1,6 @@
 import { CorsHttpMethod, HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2-alpha';
 import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
-import { CfnOutput, RemovalPolicy, Stack, StackProps, aws_apigateway } from 'aws-cdk-lib';
+import { CfnOutput, Duration, RemovalPolicy, Stack, StackProps, aws_apigateway } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { BlockPublicAccess, Bucket, EventType, HttpMethods } from 'aws-cdk-lib/aws-s3';
@@ -73,15 +73,6 @@ export class ImportServiceStack extends Stack {
       },
     });
 
-    httpApi.addRoutes({
-      path: '/import',
-      methods: [HttpMethod.GET],
-      integration: new HttpLambdaIntegration(
-        'import-service-integration',
-        importProductsFile,
-      ),
-    });
-
     new CfnOutput(this, 'ImportService', {
       value: `${httpApi.url}import`,
       description: '',
@@ -96,11 +87,31 @@ export class ImportServiceStack extends Stack {
     queue.grantSendMessages(importFileParser);
 
     //task-7
-    const importedLambda = lambda.Function.fromFunctionArn(this, 'basicAuthorizer', 'arn:aws:lambda:eu-west-1:675448858320:function:basicAuthorizer');
+    const importedLambda = lambda.Function.fromFunctionArn(this, 'fromFunctionArn', 'arn:aws:lambda:eu-west-1:675448858320:function:basicAuthorizer');
 
     console.log('functionArn', importedLambda.functionArn);
     console.log('functionName', importedLambda.functionName);
 
-    
+    const authorizer = new HttpLambdaAuthorizer('HttpLambdaAuthorizer', importedLambda, {
+      responseTypes: [HttpLambdaResponseType.IAM],
+      resultsCacheTtl: Duration.seconds(0),
+    });
+
+    new lambda.CfnPermission(this, 'CfnPermission', {
+      action: 'lambda:InvokeFunction',
+      functionName: importedLambda.functionName,
+      principal: 'apigateway.amazonaws.com',
+      sourceAccount: this.account,
+    });
+
+    httpApi.addRoutes({
+      path: '/import',
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        'import-service-integration',
+        importProductsFile,
+      ),
+      authorizer,
+    });
   };
 };

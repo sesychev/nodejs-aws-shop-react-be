@@ -3,9 +3,9 @@ import { ALLOW, DENY, UNAUTHORIZED } from './constants';
 export const handler = (event: any, _context: any, callback: any) => {
   console.log('event:', event);
 
-  //if (!event.type || event.type !== 'TOKEN') callback('Error: Invalid token.');
-
   try {
+    require("dotenv").config();
+
     const authorizationToken = event.authorizationToken;
     console.log('client token:', event.authorizationToken);
 
@@ -17,6 +17,7 @@ export const handler = (event: any, _context: any, callback: any) => {
     console.log('userName:', user);
 
     const storedUserPassword = process.env[user];
+    console.log('storedUserPassword:', storedUserPassword);
 
     const effect = !storedUserPassword || storedUserPassword !== password ? DENY : ALLOW;
     console.log('effect:', JSON.stringify(effect));
@@ -33,20 +34,20 @@ export const handler = (event: any, _context: any, callback: any) => {
 };
 
 const generatePolicy = (
-	principalId: any,
-	Effect: string,
-	Resource: any
+  principalId: any,
+  Effect: string,
+  Resource: any
 ) => ({
-	principalId,
-	policyDocument: {
-		Version: '2012-10-17',
-		Statement: [
-			{
-				Action: 'execute-api:Invoke',
-				Effect,
-				Resource
-			}
-		]
-	}
+  principalId,
+  policyDocument: {
+    Version: '2012-10-17',
+    Statement: [
+      {
+        Action: 'execute-api:Invoke',
+        Effect,
+        Resource
+      }
+    ]
+  }
 });
 

@@ -28,6 +28,7 @@
     "@tatsuto-iijima/aws-cdk-lib-cognito": "^0.1.1",
     "aws-cdk-lib": "2.113.0",
     "constructs": "^10.0.0",
+    "dotenv": "^16.3.1",
     "source-map-support": "^0.5.21"
   }
 }
