@@ -1,3 +1,3 @@
-export const ALLOW = 'Allow';
-export const DENY = 'Deny';
-export const UNAUTHORIZED = 'Unauthorized user';
+export const ALLOW = "Allow";
+export const DENY = "Deny";
+export const UNAUTHORIZED = "Unauthorized";

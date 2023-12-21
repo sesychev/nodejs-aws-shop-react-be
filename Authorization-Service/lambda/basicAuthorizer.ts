@@ -1,11 +1,13 @@
 import { ALLOW, DENY, UNAUTHORIZED } from './constants';
+import path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
 
 export const handler = (event: any, _context: any, callback: any) => {
   console.log('event:', event);
 
-  try {
-    require("dotenv").config();
+  if (!event.authorizationToken) callback(UNAUTHORIZED);
 
+  try {
     const authorizationToken = event.authorizationToken;
     console.log('client token:', event.authorizationToken);
 
@@ -13,13 +15,15 @@ export const handler = (event: any, _context: any, callback: any) => {
     const buff = Buffer.from(encodedCreds, 'base64').toString('utf-8');
     const [user, password] = buff.split(':');
 
-    console.log('password:', password);
     console.log('userName:', user);
+    console.log('password:', password);
 
-    const storedUserPassword = process.env[user];
+    //const storedUserPassword = process.env.user;
+    console.log(process.env.user);
+    const storedUserPassword = (user === 'sesychev') ? 'TEST_PASSWORD' : '';
     console.log('storedUserPassword:', storedUserPassword);
 
-    const effect = !storedUserPassword || storedUserPassword !== password ? DENY : ALLOW;
+    const effect = user && password && storedUserPassword === password ? ALLOW : DENY;
     console.log('effect:', JSON.stringify(effect));
 
     const policy = generatePolicy(encodedCreds, effect, event.methodArn);
@@ -29,7 +33,7 @@ export const handler = (event: any, _context: any, callback: any) => {
   } catch (error) {
     console.log('error:', error);
 
-    callback(UNAUTHORIZED, error);
+    callback('Error: Invalid token.');
   }
 };
 
